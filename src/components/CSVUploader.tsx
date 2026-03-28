@@ -11,11 +11,18 @@ interface CSVUploaderProps {
 export default function CSVUploader({ onDataLoaded }: CSVUploaderProps) {
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<ContactRow[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setIsUploading(true);
+    setIsSuccess(false);
+
+    // Simulate a brief "processing" delay for UX
+    setTimeout(() => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
@@ -44,36 +51,92 @@ export default function CSVUploader({ onDataLoaded }: CSVUploaderProps) {
                });
                if (currentEmails.length > 0) newRow.email = currentEmails.join(', ');
              }
-             if ((lowerKey.includes('name') && !lowerKey.includes('company') && !lowerKey.includes('file')) && !newRow.name && row[key]) newRow.name = row[key];
-             if ((lowerKey.includes('company') || lowerKey === 'employer') && !newRow.company && row[key]) newRow.company = row[key];
-             if ((lowerKey.includes('title') || lowerKey === 'role' || lowerKey === 'hr position') && !newRow.position && row[key]) newRow.position = row[key];
+
+             // Map Name
+             if ((lowerKey.includes('name') && !lowerKey.includes('company') && !lowerKey.includes('file')) && !newRow.name && row[key]) {
+               newRow.name = row[key];
+             }
+
+             // Map Company - added more variations like 'employer', 'organization', 'work', 'current'
+             const isCompanyHeader = lowerKey === 'company' || lowerKey.includes('company') || lowerKey.includes('employer') || lowerKey.includes('organization') || lowerKey.includes('work');
+             if (isCompanyHeader && !newRow.company && row[key]) {
+               newRow.company = row[key];
+             }
+
+             // Map Position - added 'title', 'role', 'hr position', 'job'
+             const isPositionHeader = lowerKey === 'position' || lowerKey.includes('position') || lowerKey.includes('title') || lowerKey.includes('role') || lowerKey.includes('job');
+             if (isPositionHeader && !newRow.position && row[key]) {
+               newRow.position = row[key];
+             }
 
              newRow[lowerKey] = row[key];
           }
+
+          // Smart Fallback: If no company was found, extract it from the email domain
+          if (!newRow.company && newRow.email) {
+            const firstEmail = newRow.email.split(',')[0].trim();
+            const domainMatch = firstEmail.match(/@([^.]+)\./);
+            if (domainMatch && domainMatch[1]) {
+              const domain = domainMatch[1];
+              // Skip generic providers
+              const genericProviders = ['gmail', 'outlook', 'hotmail', 'yahoo', 'icloud', 'me', 'msn', 'live'];
+              if (!genericProviders.includes(domain.toLowerCase())) {
+                // Capitalize and clean (e.g., "shop-grok" -> "Shop-Grok")
+                const formattedDomain = domain
+                  .split(/[-_]/)
+                  .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join('-');
+                newRow.company = formattedDomain;
+              }
+            }
+          }
+
           return newRow as ContactRow;
         }).filter(r => r.email); // filter out rows without email
 
         setError(null);
         setPreview(normalizedRows.slice(0, 5));
         onDataLoaded(normalizedRows);
+        setIsUploading(false);
+        setIsSuccess(true);
+        // Clear success state after 3 seconds
+        setTimeout(() => setIsSuccess(false), 3000);
       },
       error: (err: any) => {
         setError(err.message);
+        setIsUploading(false);
       }
     });
+    }, 800);
   };
 
   return (
-    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-gray-500 bg-gray-50 hover:bg-gray-100 transition">
-      <UploadCloud className="w-10 h-10 mb-3 text-gray-400" />
-      <p className="mb-2 text-sm">Upload CSV containing recipients data</p>
+    <div className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center transition-all duration-300 ${
+      isSuccess ? 'border-green-400 bg-green-50' : 'border-gray-300 bg-gray-50'
+    } ${isUploading ? 'opacity-70 animate-pulse' : 'hover:bg-gray-100'}`}>
+      
+      {isSuccess ? (
+        <div className="flex flex-col items-center animate-scale-up">
+          <div className="w-10 h-10 mb-3 bg-green-100 rounded-full flex items-center justify-center">
+             <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+          </div>
+          <p className="mb-2 text-sm font-semibold text-green-700">File Processed Successfully!</p>
+        </div>
+      ) : (
+        <>
+          <UploadCloud className={`w-10 h-10 mb-3 ${isUploading ? 'text-blue-500 animate-bounce' : 'text-gray-400'}`} />
+          <p className="mb-2 text-sm text-gray-500">{isUploading ? 'Parsing CSV...' : 'Upload CSV containing recipients data'}</p>
+        </>
+      )}
+
       <input 
         type="file" 
         accept=".csv" 
+        disabled={isUploading}
         onChange={handleFileUpload} 
-        className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" 
+        className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer disabled:cursor-not-allowed" 
       />
-      {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
+      {error && <p className="text-red-500 text-sm mt-3 animate-bounce">{error}</p>}
       
       {preview.length > 0 && (
         <div className="w-full mt-6 text-left">

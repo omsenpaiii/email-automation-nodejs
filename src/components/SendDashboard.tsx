@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { SendStatus, EmailLog } from '@/types';
-import { Play, Pause, Square, AlertCircle, CheckCircle } from 'lucide-react';
+import { Play, Pause, Square, AlertCircle, CheckCircle, Send } from 'lucide-react';
 
 interface SendDashboardProps {
   status: SendStatus;
@@ -34,7 +34,7 @@ export default function SendDashboard({
         </div>
         <div className="h-10 w-px bg-gray-200" />
         <div className="flex flex-col">
-          <span className="text-sm text-gray-500 uppercase tracking-widest font-semibold text-blue-600">Pending</span>
+          <span className={`text-sm text-gray-500 uppercase tracking-widest font-semibold text-blue-600 ${status === 'sending' ? 'animate-pulse' : ''}`}>Pending</span>
           <span className="text-2xl font-bold text-blue-800">{pending}</span>
         </div>
         <div className="h-10 w-px bg-gray-200" />
@@ -47,6 +47,12 @@ export default function SendDashboard({
           <span className="text-sm text-gray-500 uppercase tracking-widest font-semibold text-red-600">Failed</span>
           <span className="text-2xl font-bold text-red-800">{failed}</span>
         </div>
+        {status === 'sending' && (
+          <div className="ml-auto flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-full border border-blue-100 animate-pulse">
+            <Send className="w-4 h-4 text-blue-600 animate-bounce" />
+            <span className="text-xs font-bold text-blue-600 uppercase tracking-tighter">Sending...</span>
+          </div>
+        )}
       </div>
 
       <div className="mb-6">
@@ -61,8 +67,8 @@ export default function SendDashboard({
         />
       </div>
       
-      <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
-        <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${progressPercent}%` }}></div>
+      <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6 overflow-hidden">
+        <div className={`bg-blue-600 h-2.5 rounded-full transition-all duration-300 ${status === 'sending' ? 'animate-shimmer' : ''}`} style={{ width: `${progressPercent}%` }}></div>
       </div>
 
       <div className="flex gap-3 mb-6">
