@@ -13,7 +13,7 @@ export default function SMTPSettings({ config, setConfig }: SMTPSettingsProps) {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover-lift active:bg-gray-50 transition-colors">
       <h2 className="text-xl font-semibold mb-4 text-gray-800">SMTP Settings</h2>
       
       <div className="grid grid-cols-2 gap-4 items-end">
@@ -25,7 +25,7 @@ export default function SMTPSettings({ config, setConfig }: SMTPSettingsProps) {
             value={config.host}
             onChange={handleChange}
             placeholder="e.g. smtp.gmail.com"
-            className="w-full border border-gray-300 rounded-md p-2 placeholder:text-gray-400" 
+            className="w-full border border-gray-300 rounded-md p-2 placeholder:text-gray-400 focus-glow" 
           />
         </div>
         <div>
@@ -36,7 +36,7 @@ export default function SMTPSettings({ config, setConfig }: SMTPSettingsProps) {
             value={config.port}
             onChange={handleChange}
             placeholder="e.g. 587 or 465"
-            className="w-full border border-gray-300 rounded-md p-2 placeholder:text-gray-400" 
+            className="w-full border border-gray-300 rounded-md p-2 placeholder:text-gray-400 focus-glow" 
           />
         </div>
         <div>
@@ -46,7 +46,7 @@ export default function SMTPSettings({ config, setConfig }: SMTPSettingsProps) {
             name="user"
             value={config.user}
             onChange={handleChange}
-            className="w-full border border-gray-300 rounded-md p-2" 
+            className="w-full border border-gray-300 rounded-md p-2 focus-glow" 
           />
         </div>
         <div>

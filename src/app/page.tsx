@@ -6,10 +6,32 @@ import SMTPSettings from '@/components/SMTPSettings';
 import SendDashboard from '@/components/SendDashboard';
 import { ContactRow, SMTPConfig, SendStatus, EmailLog } from '@/types';
 
+const DEFAULT_SUBJECT = `{{name}} — exploring {{position}} at {{company}}`;
+
+const DEFAULT_BODY = `Hi {{name}},
+
+I hope this message finds you well. I came across the {{position}} opening at {{company}} and wanted to reach out directly — I believe my background is a strong match for what your team is looking for.
+
+I recently applied through your job portal, but I know applications can get lost in the volume. A few highlights that are directly relevant:
+
+• Hands-on experience building and shipping production-grade projects aligned with the {{position}} role
+• Strong problem-solving skills demonstrated through real-world work, not just coursework
+• A genuine passion for {{company}}'s mission and the impact your team is making
+
+I'd love the opportunity to have a brief conversation — even 10 minutes — to share how I could contribute to your team's goals.
+
+I've attached my resume for your reference. Would you be open to a quick chat this week?
+
+Looking forward to hearing from you.
+
+Best regards,
+{{sendername}}`;
+
 export default function Home() {
   const [csvData, setCsvData] = useState<ContactRow[]>([]);
-  const [templateBody, setTemplateBody] = useState('');
-  const [templateSubject, setTemplateSubject] = useState('');
+  const [templateBody, setTemplateBody] = useState(DEFAULT_BODY);
+  const [templateSubject, setTemplateSubject] = useState(DEFAULT_SUBJECT);
+  const [senderName, setSenderName] = useState('');
   const [smtpConfig, setSmtpConfig] = useState<SMTPConfig>({ host: '', port: 587, user: '', pass: '' });
   
   const [status, setStatus] = useState<SendStatus>('idle');
@@ -19,18 +41,21 @@ export default function Home() {
   const statusRef = useRef(status);
   useEffect(() => { statusRef.current = status; }, [status]);
 
-  // Handle persistence
+  // Handle persistence — load saved templates, fall back to defaults
   useEffect(() => {
-    const savedBody = localStorage.getItem('rr_template_body');
-    const savedSubject = localStorage.getItem('rr_template_subject');
-    if (savedBody) setTemplateBody(savedBody);
-    if (savedSubject) setTemplateSubject(savedSubject);
+    const savedBody = localStorage.getItem('rr_template_body_v2');
+    const savedSubject = localStorage.getItem('rr_template_subject_v2');
+    const savedSender = localStorage.getItem('rr_sender_name');
+    if (savedBody && savedBody.trim()) setTemplateBody(savedBody);
+    if (savedSubject && savedSubject.trim()) setTemplateSubject(savedSubject);
+    if (savedSender) setSenderName(savedSender);
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('rr_template_body', templateBody);
-    localStorage.setItem('rr_template_subject', templateSubject);
-  }, [templateBody, templateSubject]);
+    localStorage.setItem('rr_template_body_v2', templateBody);
+    localStorage.setItem('rr_template_subject_v2', templateSubject);
+    localStorage.setItem('rr_sender_name', senderName);
+  }, [templateBody, templateSubject, senderName]);
 
   const sendNextEmail = async (currentIndex: number) => {
     if (statusRef.current !== 'sending') return;
@@ -42,7 +67,10 @@ export default function Home() {
     const contact = csvData[currentIndex];
     
     // Replace variables (e.g., {{name}} -> contact.name)
-    const replaceVars = (text: string) => text.replace(/\{\{(\w+)\}\}/g, (match, p1) => contact[p1.toLowerCase()] || match);
+    const replaceVars = (text: string) => text.replace(/\{\{(\w+)\}\}/g, (match, p1) => {
+      if (p1.toLowerCase() === 'sendername') return senderName || match;
+      return contact[p1.toLowerCase()] || match;
+    });
     const subject = replaceVars(templateSubject);
     const text = replaceVars(templateBody);
 
@@ -123,6 +151,20 @@ export default function Home() {
       <main className="max-w-6xl mx-auto px-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-4 space-y-6">
           <CSVUploader onDataLoaded={setCsvData} />
+          
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover-lift">
+            <h2 className="text-xl font-semibold mb-3 text-gray-800">Your Details</h2>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Your Name (for sign-off)</label>
+            <input 
+              type="text" 
+              value={senderName}
+              onChange={(e) => setSenderName(e.target.value)}
+              placeholder="e.g. Om Patel"
+              className="w-full border border-gray-300 rounded-md p-2 focus-glow placeholder:text-gray-400" 
+            />
+            <p className="text-xs text-gray-500 mt-2">Used as <code className="bg-gray-100 px-1 rounded">{'{{sendername}}'}</code> in your template sign-off.</p>
+          </div>
+
           <SMTPSettings config={smtpConfig} setConfig={setSmtpConfig} />
         </div>
         
@@ -138,6 +180,7 @@ export default function Home() {
             templateSubject={templateSubject}
             setTemplateSubject={setTemplateSubject}
             previewContact={csvData.length > 0 ? csvData[0] : null}
+            senderName={senderName}
           />
 
           <SendDashboard 
