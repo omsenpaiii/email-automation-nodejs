@@ -6,13 +6,13 @@ import SMTPSettings from '@/components/SMTPSettings';
 import SendDashboard from '@/components/SendDashboard';
 import { ContactRow, SMTPConfig, SendStatus, EmailLog } from '@/types';
 
-const DEFAULT_SUBJECT = `{{name}} — exploring {{position}} at {{company}}`;
+const DEFAULT_SUBJECT = `Quick note re: {{position}} — {{company}}`;
 
 const DEFAULT_BODY = `Hi {{name}},
 
 I hope this message finds you well. I came across the {{position}} opening at {{company}} and wanted to reach out directly — I believe my background is a strong match for what your team is looking for.
 
-I recently applied through your job portal, but I know applications can get lost in the volume. A few highlights that are directly relevant:
+I recently applied through your job opening, but I know applications can get lost in the volume. A few highlights that are directly relevant:
 
 • Hands-on experience building and shipping production-grade projects aligned with the {{position}} role
 • Strong problem-solving skills demonstrated through real-world work, not just coursework
